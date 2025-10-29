@@ -82,3 +82,16 @@ app.post("/redeem", async (req, res) => {
     const doc = await voucherRef.get();
 
     if (!doc.exists) return res.status(404).
+return res.status(404).json({ error: "Voucher not found ❌" });
+
+    const voucher = doc.data();
+    if (voucher.used)
+      return res.status(400).json({ error: "Voucher already used ⚠️" });
+
+    await voucherRef.update({
+      used: true,
+      usedBy: user,
+      usedAt: Date.now(),
+    });
+
+    res
