@@ -95,3 +95,75 @@ return res.status(404).json({ error: "Voucher not found ❌" });
     });
 
     res
+    res.status(200).json({ message: "Voucher redeemed successfully ✅" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Payments record ---
+app.post("/payment", async (req, res) => {
+  try {
+    const { user, amount, method } = req.body;
+    const paymentRef = db.collection("payments").doc();
+    await paymentRef.set({
+      user,
+      amount,
+      method,
+      createdAt: Date.now(),
+    });
+    res.status(200).json({ message: "Payment recorded ✅" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Smart TV packages (similar to
+// --- Smart TV packages (same logic as phone packages) ---
+app.post("/smarttv/package", async (req, res) => {
+  try {
+    const { name, price, speed, time } = req.body;
+    const tvRef = db.collection("smarttv_packages").doc();
+    await tvRef.set({ name, price, speed, time, type: "Smart TV", createdAt: Date.now() });
+    res.status(200).json({ message: "Smart TV package created ✅" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Fetch Smart TV packages ---
+app.get("/smarttv/packages", async (req, res) => {
+  try {
+    const snapshot = await db.collection("smarttv_packages").get();
+    const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Reports summary ---
+app.get("/reports/summary", async (req, res) => {
+  try {
+    const paymentsSnap = await db.collection("payments").get();
+    const usersSnap = await db.collection("users").get();
+    const vouchersSnap = await db.collection("vouchers").get();
+
+    const totalEarnings = paymentsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 
+0), 0);
+
+    res.status(200).json({
+      users: usersSnap.size,
+      vouchers: vouchersSnap.size,
+      totalEarnings,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Start the server ---
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`🚀 DRS Billing System Backend running on port ${PORT}`);
+});
